@@ -1,9 +1,7 @@
-FROM ubuntu:14.04
+FROM debian:jessie
 MAINTAINER Johannes 'fish' Ziemke <fish@freigeist.org> @discordianfish
 
-RUN apt-get -qy update && apt-get -qy install software-properties-common
-RUN add-apt-repository ppa:nginx/development
-RUN apt-get -qy update && apt-get -qy install nginx haproxy ucarp openssl
+RUN apt-get -qy update && apt-get -qy install haproxy ucarp openssl daemontools
 
 ADD . /haproxy
 WORKDIR    /haproxy

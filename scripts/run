@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PIDFILE=/tmp/ucarp.pid
-trap "shutdown" SIGINT SIGTERM
+trap "shutdown" SIGINT SIGTERM SIGCHLD
 
 shutdown() {
   RET=$1
@@ -37,21 +37,21 @@ then
 fi
 
 # Generate keys if not provided
-[ -f nginx.d/dhparam.pem ] ||
-      openssl dhparam -out nginx.d/dhparam.pem 2048
-[ -f nginx.d/server-key.pem ] ||
-      openssl genrsa -out nginx.d/server-key.pem 2048
-[ -f nginx.d/server-csr.pem ] ||
-      openssl req -new -key nginx.d/server-key.pem -out nginx.d/server-csr.pem -subj /CN=*/
-[ -f nginx.d/server-cert.pem ] ||
-      openssl x509 -req -in nginx.d/server-csr.pem -out nginx.d/server-cert.pem -signkey nginx.d/server-key.pem -days 3650
+[ -f keys/dhparam.pem ] ||
+  openssl dhparam -out keys/dhparam.pem 2048
+
+if [ ! -f keys/default.pem ]
+then
+  openssl genrsa -out keys/server-key.pem 2048
+  openssl req -new -key keys/server-key.pem -out keys/server-csr.pem -subj /CN=*/
+  openssl x509 -req -in keys/server-csr.pem -out keys/server-cert.pem -signkey keys/server-key.pem -days 3650
+  cat keys/server-cert.pem keys/server-key.pem > keys/default.pem
+fi
 
 # Check is haproxy.cfg is valid before we start ucarp
 haproxy -c -f /haproxy/haproxy.cfg
-nginx -t -c /haproxy/nginx.conf
 
-( /usr/sbin/nginx   -c /haproxy/nginx.conf;  shutdown 1 ) &
-( /usr/sbin/haproxy -f /haproxy/haproxy.cfg; shutdown 2 ) &
+( fghack /usr/sbin/haproxy -f /haproxy/haproxy.cfg; shutdown 1 ) &
 
 /haproxy/scripts/ucarp &
 echo $! > $PIDFILE

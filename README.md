@@ -20,6 +20,11 @@ Now you should have two haproxy running and ucarp running on
 the given interface, making sure only one listens on 10.0.1.201
 (and optionally on additional IPs).
 
+## Caveats
+If you're using IP based vhosts, you need to set
+`net.ipv4.ip_nonlocal_bind=1` to allow the slave haproxy to bind to the
+right addresses even if they are not configured on your interfaces.
+
 ## Failure Scenarios
 If any service haproxy goes down, the container is supposed to kill
 UCARP so the IP gets removed and the backup can take over.
